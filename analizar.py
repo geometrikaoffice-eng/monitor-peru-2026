@@ -33,25 +33,37 @@ def descargar(nombre):
 
 def consultar_onpe_oficial():
     """Consulta directa a la API de ONPE (requiere fingerprinting de Chrome).
+    Endpoints tomados del código fuente del scraper (client.py).
     Devuelve dict con totales oficiales o None si falla."""
     try:
         from curl_cffi import requests as cf
-        # 1. Proceso activo
-        r = cf.get(f"{ONPE_BASE}/presentacion-backend/proceso/proceso-electoral-activo",
-                   impersonate="chrome124", timeout=30)
-        id_eleccion = r.json()["data"]["idEleccion"]
+        BK = f"{ONPE_BASE}/presentacion-backend"
+        s = cf.Session()
+        s.headers.update({
+            "Accept": "application/json, text/plain, */*",
+            "X-Requested-With": "XMLHttpRequest",
+            "Referer": f"{ONPE_BASE}/main/resumen",
+            "Accept-Language": "es-PE,es;q=0.9",
+        })
 
-        # 2. Candidatos — totales nacionales
-        r = cf.get(f"{ONPE_BASE}/presentacion-backend/candidatos/filtro-tipo-eleccion",
-                   params={"idEleccion": id_eleccion, "tipoFiltro": "eleccion"},
-                   impersonate="chrome124", timeout=30)
-        cand = r.json().get("data")
+        def get_data(path, params=None):
+            r = s.get(BK + path, params=params, impersonate="chrome124", timeout=30)
+            r.raise_for_status()
+            return r.json()["data"]
 
-        # 3. Totales — actas / participación
-        r = cf.get(f"{ONPE_BASE}/presentacion-backend/totales/filtro-tipo-eleccion",
-                   params={"idEleccion": id_eleccion, "tipoFiltro": "eleccion"},
-                   impersonate="chrome124", timeout=30)
-        tot = r.json().get("data")
+        # 1. Proceso activo → idEleccionPrincipal
+        proceso = get_data("/proceso/proceso-electoral-activo")
+        id_eleccion = int(proceso["idEleccionPrincipal"])
+        params = {"idEleccion": id_eleccion, "tipoFiltro": "eleccion"}
+
+        # 2. Totales nacionales (actas, participación)
+        tot = get_data("/resumen-general/totales", params=params)
+
+        # 3. Candidatos con votos y porcentajes
+        cand = get_data(
+            "/eleccion-presidencial/participantes-ubicacion-geografica-nombre",
+            params=params)
+
         return {"candidatos": cand, "totales": tot, "id_eleccion": id_eleccion}
     except Exception as e:
         print(f"[AVISO] Consulta directa a ONPE falló ({e}). Continuamos con datos del scraper.",
