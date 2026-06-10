@@ -3,179 +3,343 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monitor Electoral Perú 2026 — Segunda Vuelta</title>
+<title>Monitor en vivo · Segunda Vuelta Perú 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0e1116; --card:#171c24; --card2:#1d2430; --txt:#e8ebf0; --mut:#8b94a3;
-    --keiko:#f5821f; --sanchez:#c8102e; --ok:#3ecf8e; --warn:#f0b429; --line:#2a3342;
+    --ink:#1B2236; --paper:#FAFAF7; --card:#FFFFFF;
+    --fp:#E8590C; --fp-soft:#FFE8D9;
+    --jp:#2F9E44; --jp-soft:#E0F2E3;
+    --gris:#5C6470; --linea:#E4E2DA; --amarillo:#FFF3BF;
   }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;padding:20px;max-width:880px;margin:0 auto}
-  h1{font-size:1.35rem;letter-spacing:.5px}
-  .sub{color:var(--mut);font-size:.85rem;margin:4px 0 18px}
-  .badge{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:3px 12px;font-size:.75rem;color:var(--mut);margin:2px 4px 2px 0}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
-  .card h2{font-size:.8rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--mut);margin-bottom:14px}
-  .race{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-  .cand{flex:1;min-width:230px}
-  .cand .nom{font-size:.85rem;font-weight:600;margin-bottom:4px}
-  .cand .pct{font-size:2.2rem;font-weight:700}
-  .cand .vot{color:var(--mut);font-size:.85rem}
-  .bar{height:14px;border-radius:7px;background:var(--card2);overflow:hidden;display:flex;margin:14px 0 6px}
-  .bar div{height:100%}
-  .k{color:var(--keiko)} .s{color:var(--sanchez)}
-  .bk{background:var(--keiko)} .bs{background:var(--sanchez)}
-  .center{text-align:center;color:var(--mut);font-size:.8rem}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-  .stat{background:var(--card2);border-radius:10px;padding:12px;text-align:center}
-  .stat .v{font-size:1.3rem;font-weight:700}
-  .stat .l{font-size:.7rem;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
-  .lead{font-size:1.05rem;font-weight:600;padding:10px 14px;border-radius:10px;background:var(--card2);margin-top:12px;text-align:center}
-  table{width:100%;border-collapse:collapse;font-size:.83rem}
-  th,td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--line)}
-  th:first-child,td:first-child{text-align:left}
-  th{color:var(--mut);font-weight:600;font-size:.72rem;text-transform:uppercase}
-  .nota{color:var(--mut);font-size:.75rem;line-height:1.5;margin-top:10px}
-  .err{background:#3a1f1f;border:1px solid #6e3030;border-radius:10px;padding:14px;color:#f0b0b0;display:none}
-  footer{color:var(--mut);font-size:.72rem;text-align:center;margin:24px 0;line-height:1.6}
-  a{color:#6ea8fe;text-decoration:none}
-  .pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px;animation:p 2s infinite}
-  @keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15px;line-height:1.55}
+  .wrap{max-width:680px;margin:0 auto;padding:0 18px 48px}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gris)}
+  section{margin-top:34px}
+  .sec-title{font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .sec-title::after{content:'';flex:1;height:1px;background:var(--linea)}
+  .mono{font-family:'IBM Plex Mono',monospace}
+
+  /* ===== HERO: probabilímetro en vivo ===== */
+  .hero{background:var(--ink);color:#fff;margin:0 -18px;padding:26px 18px 22px}
+  .hero-inner{max-width:644px;margin:0 auto}
+  .hero .eyebrow{color:#9AA3B8;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px}
+  .live-dot{display:inline-flex;align-items:center;gap:6px}
+  .live-dot::before{content:'';width:7px;height:7px;border-radius:50%;background:#FF6B6B;animation:pulso 1.6s infinite}
+  @keyframes pulso{0%,100%{opacity:1}50%{opacity:.25}}
+  h1{font-family:'Archivo',sans-serif;font-weight:800;font-size:clamp(22px,5.5vw,30px);line-height:1.08;margin:10px 0 4px}
+
+  .gauge-zone{display:flex;gap:18px;align-items:center;margin-top:14px;flex-wrap:wrap}
+  .gauge{flex:0 0 auto;width:min(300px,72vw)}
+  .gauge svg{width:100%;display:block}
+  .needle{transition:transform 1.4s cubic-bezier(.2,.8,.2,1);transform-origin:150px 140px}
+  .g-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:#9AA3B8}
+
+  .prob-side{flex:1;min-width:200px}
+  .prob-num{font-family:'Archivo',sans-serif;font-weight:800;font-size:clamp(38px,9vw,54px);line-height:1;color:#FFB084}
+  .prob-num small{font-size:.45em;font-weight:700;vertical-align:.45em}
+  .prob-quien{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C8CEDC;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+  .delta{display:inline-flex;align-items:center;gap:5px;margin-top:10px;padding:4px 10px;border-radius:20px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;background:#2A3350}
+  .delta.sube{color:#FFC09E}.delta.baja{color:#9BE2A8}.delta.igual{color:#C8CEDC}
+
+  .spark-box{margin-top:18px}
+  .spark-box .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#9AA3B8;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+  .spark{width:100%;height:54px;display:block}
+  .reloj{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#9AA3B8;margin-top:10px}
+  .salud{margin-top:12px;border-radius:8px;padding:11px 14px;font-size:12.5px;line-height:1.45;display:none}
+  .salud.ok{display:block;background:#15331F;border:1px solid #2F9E44;color:#9BE2A8}
+  .salud.warn{display:block;background:#3A2E12;border:1px solid #C99A2E;color:#FFD982}
+  .salud.err{display:block;background:#3A1818;border:1px solid #C94444;color:#FFA8A8}
+  .salud b{font-weight:600}
+  .salud .luz{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle}
+  .salud.ok .luz{background:#51CF66}
+  .salud.warn .luz{background:#FFC94D}
+  .salud.err .luz{background:#FF6B6B}
+
+  /* ===== marcador, waterfall, tarjetas, tabla (idéntico lenguaje visual) ===== */
+  .marcador{display:flex;gap:2px;border:1.5px solid var(--ink);border-radius:6px;overflow:hidden}
+  .lado{padding:14px 14px 12px;flex:1}
+  .lado.jp{background:var(--jp-soft)} .lado.fp{background:var(--fp-soft);text-align:right}
+  .lado .cand{font-family:'Archivo',sans-serif;font-weight:700;font-size:13px}
+  .lado .pct{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:clamp(22px,5.5vw,30px);display:block;margin-top:2px}
+  .lado.jp .pct{color:var(--jp)} .lado.fp .pct{color:var(--fp)}
+  .lado .votos{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gris)}
+  .barra{height:10px;display:flex;border:1.5px solid var(--ink);border-top:none;border-radius:0 0 6px 6px;overflow:hidden;margin:0 1px}
+  .barra .bjp{background:var(--jp)} .barra .bfp{background:var(--fp)}
+  .nota{font-size:12.5px;color:var(--gris);margin-top:8px}
+
+  .wf{border:1.5px solid var(--ink);border-radius:6px;background:var(--card);padding:18px 16px 14px}
+  .wf-row{margin-bottom:16px}.wf-row:last-child{margin-bottom:0}
+  .wf-label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-weight:600;margin-bottom:5px}
+  .wf-label .d{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600}
+  .d.fp{color:var(--fp)} .d.jp{color:var(--jp)}
+  .wf-track{position:relative;height:18px;background:#F1F0EB;border-radius:3px;overflow:hidden}
+  .wf-track::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:var(--ink);opacity:.35;z-index:2}
+  .wf-bar{position:absolute;top:2px;bottom:2px;border-radius:2px;transition:width .8s ease}
+  .wf-bar.jp{background:var(--jp);right:50%} .wf-bar.fp{background:var(--fp);left:50%}
+  .wf-desc{font-size:12px;color:var(--gris);margin-top:4px}
+  .wf-result{margin-top:18px;padding-top:14px;border-top:1.5px dashed var(--linea);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .wf-result .num{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:17px}
+  .wf-eje{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--gris);margin-top:10px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:480px){.grid2{grid-template-columns:1fr}}
+  .dato{border:1px solid var(--linea);border-radius:6px;background:var(--card);padding:14px}
+  .dato .k{font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--gris)}
+  .dato .v{font-family:'Archivo',sans-serif;font-weight:800;font-size:24px;margin-top:4px}
+  .dato .v.fp{color:var(--fp)} .dato .d{font-size:12.5px;color:var(--gris);margin-top:3px}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--gris);text-align:left;padding:6px 8px;border-bottom:1.5px solid var(--ink)}
+  th.num,td.num{text-align:right;font-family:'IBM Plex Mono',monospace}
+  td{padding:7px 8px;border-bottom:1px solid var(--linea)}
+  .fp-txt{color:var(--fp);font-weight:600}.jp-txt{color:var(--jp);font-weight:600}
+
+  .aviso{background:var(--amarillo);border:1px solid #E9DB91;border-radius:6px;padding:12px 14px;font-size:12.5px;margin-top:26px}
+  footer{margin-top:36px;padding-top:16px;border-top:1.5px solid var(--ink);font-size:11.5px;color:var(--gris)}
+  footer p{margin-bottom:6px}
+  @media(prefers-reduced-motion:reduce){.needle,.wf-bar{transition:none}.live-dot::before{animation:none}}
 </style>
 </head>
 <body>
-  <h1>🇵🇪 Monitor Electoral Perú 2026 — 2.ª Vuelta</h1>
-  <div class="sub"><span class="pulse"></span>Actualización automática cada 30 min · <span id="actualizado">cargando…</span></div>
 
-  <div class="err" id="error">No se pudo cargar resumen.json. Verifica que el GitHub Action haya corrido al menos una vez.</div>
+<!-- ============ HERO EN VIVO ============ -->
+<div class="hero"><div class="hero-inner">
+  <div class="eyebrow">
+    <span class="live-dot">Monitor en vivo · actualización automática</span>
+    <span id="avance">—% de actas</span>
+  </div>
+  <h1>¿Quién será presidente del Perú?</h1>
 
-  <!-- CIFRA OFICIAL ONPE -->
-  <div class="card" id="cardOficial" style="display:none">
-    <h2>📡 Cifra oficial ONPE (consulta directa)</h2>
-    <div class="race" id="raceOficial"></div>
-    <div class="bar" id="barOficial"></div>
-    <div class="center" id="metaOficial"></div>
+  <div class="gauge-zone">
+    <div class="gauge">
+      <svg viewBox="0 0 300 160">
+        <defs>
+          <linearGradient id="arcograd" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"  stop-color="#2F9E44"/>
+            <stop offset="42%" stop-color="#2F9E44"/>
+            <stop offset="50%" stop-color="#7A8194"/>
+            <stop offset="58%" stop-color="#E8590C"/>
+            <stop offset="100%" stop-color="#E8590C"/>
+          </linearGradient>
+        </defs>
+        <path d="M 20 140 A 130 130 0 0 1 280 140" fill="none" stroke="#2A3350" stroke-width="22" stroke-linecap="round"/>
+        <path d="M 20 140 A 130 130 0 0 1 280 140" fill="none" stroke="url(#arcograd)" stroke-width="14" stroke-linecap="round"/>
+        <line x1="150" y1="140" x2="150" y2="22" stroke="#39415A" stroke-width="1.5" stroke-dasharray="3 4"/>
+        <text x="26"  y="156" class="g-lbl">SÁNCHEZ</text>
+        <text x="226" y="156" class="g-lbl">FUJIMORI</text>
+        <text x="150" y="14"  class="g-lbl" text-anchor="middle">50/50</text>
+        <g id="aguja" class="needle">
+          <polygon points="150,30 145,140 155,140" fill="#FFFFFF"/>
+          <circle cx="150" cy="140" r="9" fill="#FFFFFF"/>
+          <circle cx="150" cy="140" r="4" fill="#1B2236"/>
+        </g>
+      </svg>
+    </div>
+    <div class="prob-side">
+      <div class="prob-num" id="probNum">—<small>%</small></div>
+      <div class="prob-quien" id="probQuien">probabilidad de ganar</div>
+      <div class="delta igual" id="delta">— sin datos previos</div>
+    </div>
   </div>
 
-  <!-- CONTEO MESA POR MESA -->
-  <div class="card">
-    <h2>🗳️ Conteo mesa por mesa (dataset scraper)</h2>
-    <div class="race" id="raceConteo"></div>
-    <div class="bar" id="barConteo"></div>
-    <div class="lead" id="leadConteo"></div>
-    <p class="nota">⚠️ El dataset del scraper está incompleto (~4,700 mesas menos que el total oficial). La cifra oficial ONPE de arriba es la referencia definitiva.</p>
+  <div class="spark-box">
+    <div class="k">Evolución de la probabilidad · P(Fujimori)</div>
+    <svg class="spark" id="spark" viewBox="0 0 600 54" preserveAspectRatio="none"></svg>
   </div>
+  <div class="reloj" id="reloj">cargando datos…</div>
+  <div class="salud" id="salud"></div>
+</div></div>
 
-  <!-- PROYECCIÓN -->
-  <div class="card">
-    <h2>🔮 Proyección con mesas pendientes</h2>
-    <div class="race" id="raceProy"></div>
-    <div class="bar" id="barProy"></div>
-    <div class="lead" id="leadProy"></div>
-    <p class="nota" id="metodoProy"></p>
+<div class="wrap">
+
+<section>
+  <div class="sec-title">① Conteo oficial ONPE</div>
+  <div class="marcador">
+    <div class="lado jp"><span class="cand">R. Sánchez · JP</span><span class="pct" id="jpPct">—</span><span class="votos" id="jpVotos">—</span></div>
+    <div class="lado fp"><span class="cand">K. Fujimori · FP</span><span class="pct" id="fpPct">—</span><span class="votos" id="fpVotos">—</span></div>
   </div>
+  <div class="barra"><div class="bjp" id="bjp"></div><div class="bfp" id="bfp"></div></div>
+  <p class="nota" id="notaBrecha"></p>
+</section>
 
-  <!-- ESCRUTINIO -->
-  <div class="card">
-    <h2>📊 Avance del escrutinio</h2>
-    <div class="grid" id="gridEscrutinio"></div>
+<section>
+  <div class="sec-title">② Qué falta por contar — y a quién favorece</div>
+  <div class="wf">
+    <div class="wf-row">
+      <div class="wf-label"><span>Ventaja actual (contabilizado)</span><span class="d" id="wfBrechaTxt">—</span></div>
+      <div class="wf-track"><div class="wf-bar" id="wfBrecha"></div></div>
+      <div class="wf-desc">Dato oficial ONPE.</div>
+    </div>
+    <div class="wf-row">
+      <div class="wf-label"><span>Voto extranjero pendiente</span><span class="d" id="wfExtTxt">—</span></div>
+      <div class="wf-track"><div class="wf-bar" id="wfExt"></div></div>
+      <div class="wf-desc" id="wfExtDesc"></div>
+    </div>
+    <div class="wf-row">
+      <div class="wf-label"><span>Mesas pendientes en Perú</span><span class="d" id="wfPerTxt">—</span></div>
+      <div class="wf-track"><div class="wf-bar" id="wfPer"></div></div>
+      <div class="wf-desc" id="wfPerDesc"></div>
+    </div>
+    <div class="wf-row">
+      <div class="wf-label"><span>Actas observadas en el JEE</span><span class="d" id="wfJeeTxt">—</span></div>
+      <div class="wf-track"><div class="wf-bar" id="wfJee"></div></div>
+      <div class="wf-desc" id="wfJeeDesc"></div>
+    </div>
+    <div class="wf-result">
+      <span style="font-size:13px;font-weight:600">Margen final proyectado:</span>
+      <span class="num" id="margenFinal">—</span>
+    </div>
+    <div class="wf-eje"><span>◀ favorece a Sánchez</span><span>favorece a Fujimori ▶</span></div>
   </div>
+</section>
 
-  <!-- EXTERIOR -->
-  <div class="card">
-    <h2>🌎 Voto exterior pendiente por continente</h2>
-    <table id="tablaExt"><thead><tr>
-      <th>Continente</th><th>Mesas</th><th>Electores</th><th>Proy. FP</th><th>Proy. JP</th>
-    </tr></thead><tbody></tbody></table>
+<section>
+  <div class="sec-title">③ Voto extranjero pendiente · principales países</div>
+  <table>
+    <thead><tr><th>País</th><th class="num">Mesas</th><th class="num">% FP est.</th><th class="num">Neto</th></tr></thead>
+    <tbody id="tbodyPaises"></tbody>
+  </table>
+  <p style="font-size:12px;color:var(--gris);margin-top:8px">Tasa estimada con mesas ya contabilizadas del mismo país (respaldo por continente si la muestra es pequeña).</p>
+</section>
+
+<section>
+  <div class="sec-title">④ Las actas en el Jurado Electoral</div>
+  <div class="grid2">
+    <div class="dato"><div class="k">Actas observadas</div><div class="v" id="jeeTotal">—</div><div class="d">Digitalizadas por ONPE, pendientes de cotejo en el JEE.</div></div>
+    <div class="dato"><div class="k">Favorecen a cada candidato</div><div class="v"><span class="fp-txt" id="jeeFp">—</span> / <span class="jp-txt" id="jeeJp">—</span></div><div class="d">FP / JP. Precedente 2021: la anulación masiva (802 actas) fue rechazada por el JNE.</div></div>
   </div>
+</section>
 
-  <footer>
-    Datos: <a href="https://github.com/oscarzamora/onpe-scraper-2026-2" target="_blank">oscarzamora/onpe-scraper-2026-2</a> + API oficial ONPE ·
-    Proyección estadística no oficial · Resultados definitivos: <a href="https://resultadosegundavuelta.onpe.gob.pe" target="_blank">ONPE</a>
-  </footer>
+<div class="aviso">⚠️ <b>Proyección estadística independiente — no es un resultado oficial.</b> El único resultado válido lo proclama el JNE tras resolver las actas observadas (estimado: mediados de julio). El modelo asume que ~85% de las actas del JEE se cuentan tras cotejo (tasa histórica) e incorpora la incertidumbre en σ.</div>
+
+<footer>
+  <p><b>Metodología:</b> brecha oficial consultada directamente a la API de la ONPE; mesas pendientes y actas JEE del dataset abierto mesa-por-mesa (repo onpe-scraper-2026-2); extranjero proyectado país por país con tasas reales del mismo país; probabilidad = Φ(margen esperado / σ), con σ que combina error de proyección, incertidumbre del JEE y riesgo de modelo. Recalculado automáticamente cada 30 minutos por GitHub Actions.</p>
+  <p><b>Fuentes:</b> ONPE · JNE · GitHub oscarzamora/onpe-scraper-2026-2. Código abierto de este monitor en el propio repositorio.</p>
+</footer>
+
+</div>
 
 <script>
-const fmt = n => Number(n).toLocaleString('es-PE');
-const COL = {"FUERZA POPULAR":"k","JUNTOS POR EL PERÚ":"s"};
-const SHORT = {"FUERZA POPULAR":"Keiko Fujimori · FP","JUNTOS POR EL PERÚ":"Roberto Sánchez · JP"};
-
-function candHTML(nombre, votos, pct){
-  const c = COL[nombre] || "";
-  return `<div class="cand"><div class="nom ${c}">${SHORT[nombre]||nombre}</div>
-    <div class="pct ${c}">${Number(pct).toFixed(2)}%</div>
-    <div class="vot">${fmt(votos)} votos</div></div>`;
-}
-function barHTML(el, pk){
-  el.innerHTML = `<div class="bk" style="width:${pk}%"></div><div class="bs" style="width:${100-pk}%"></div>`;
-}
+const fmt = n => new Intl.NumberFormat('es-PE').format(Math.round(n));
+const $ = id => document.getElementById(id);
 
 async function cargar(){
   try{
-    const r = await fetch('resumen.json?t=' + Date.now());
-    if(!r.ok) throw new Error(r.status);
-    const d = await r.json();
+    const bust = '?t=' + Math.floor(Date.now()/60000);
+    const r  = await fetch('resumen.json'   + bust); const d = await r.json();
+    const rh = await fetch('historial.json' + bust); const hist = await rh.json();
 
-    document.getElementById('actualizado').textContent = 'Datos al ' + d.actualizado + ' (hora Perú)';
+    // ---- Probabilímetro
+    const pFP = d.prob_fujimori, lider = pFP >= 0.5 ? 'FUJIMORI' : 'SÁNCHEZ';
+    const pLider = pFP >= 0.5 ? pFP : 1-pFP;
+    $('probNum').innerHTML = (pLider*100).toFixed(1) + '<small>%</small>';
+    $('probNum').style.color = pFP >= 0.5 ? '#FFB084' : '#9BE2A8';
+    $('probQuien').textContent = 'probabilidad de que gane ' + lider;
+    // aguja: -90° (Sánchez 100%) → +90° (Fujimori 100%)
+    $('aguja').style.transform = `rotate(${(pFP-0.5)*180}deg)`;
 
-    // Oficial ONPE
-    if(d.onpe_oficial && d.onpe_oficial.candidatos){
-      const oc = d.onpe_oficial.candidatos.filter(c => COL[c.agrupacion] !== undefined);
-      if(oc.length === 2){
-        document.getElementById('cardOficial').style.display = 'block';
-        oc.sort((a,b) => COL[a.agrupacion] === 'k' ? -1 : 1);
-        document.getElementById('raceOficial').innerHTML = oc.map(c => candHTML(c.agrupacion, c.votos, c.pct)).join('');
-        barHTML(document.getElementById('barOficial'), Number(oc[0].pct));
-        let meta = [];
-        if(d.onpe_oficial.actas_contabilizadas_pct) meta.push('Actas contabilizadas: ' + d.onpe_oficial.actas_contabilizadas_pct + '%');
-        if(d.onpe_oficial.participacion) meta.push('Participación: ' + d.onpe_oficial.participacion + '%');
-        document.getElementById('metaOficial').textContent = meta.join(' · ');
-      }
+    // delta vs corrida anterior
+    if(hist.length >= 2){
+      const prev = hist[hist.length-2].prob_fp, df = (pFP-prev)*100;
+      const el = $('delta');
+      if(Math.abs(df) < 0.05){ el.className='delta igual'; el.textContent='= sin cambios desde la última actualización'; }
+      else if(df > 0){ el.className='delta sube'; el.textContent=`▲ +${df.toFixed(1)} pts para Fujimori`; }
+      else { el.className='delta baja'; el.textContent=`▼ ${Math.abs(df).toFixed(1)} pts hacia Sánchez`; }
     }
 
-    // Conteo
-    const c = d.conteo;
-    document.getElementById('raceConteo').innerHTML =
-      candHTML(c.keiko.nombre, c.keiko.votos, c.keiko.pct) +
-      candHTML(c.sanchez.nombre, c.sanchez.votos, c.sanchez.pct);
-    barHTML(document.getElementById('barConteo'), c.keiko.pct);
-    document.getElementById('leadConteo').innerHTML =
-      `Lidera <span class="${COL[c.lidera]}">${SHORT[c.lidera]}</span> por ${fmt(c.diferencia)} votos`;
+    // sparkline del historial
+    if(hist.length >= 2){
+      const xs = hist.map((h,i)=> i/(hist.length-1)*600);
+      const ys = hist.map(h => 50 - (h.prob_fp-0.5)*2*46 - 2); // centrado en 50%
+      const pts = xs.map((x,i)=>`${x.toFixed(1)},${Math.min(52,Math.max(2,ys[i])).toFixed(1)}`).join(' ');
+      $('spark').innerHTML =
+        `<line x1="0" y1="27" x2="600" y2="27" stroke="#39415A" stroke-width="1" stroke-dasharray="3 4"/>
+         <polyline points="${pts}" fill="none" stroke="#FFB084" stroke-width="2.5" stroke-linejoin="round"/>
+         <circle cx="${xs[xs.length-1].toFixed(1)}" cy="${Math.min(52,Math.max(2,ys[ys.length-1])).toFixed(1)}" r="4" fill="#FFB084"/>`;
+    }
 
-    // Proyección
-    const p = d.proyeccion;
-    document.getElementById('raceProy').innerHTML =
-      candHTML("FUERZA POPULAR", p.final_keiko.votos, p.final_keiko.pct) +
-      candHTML("JUNTOS POR EL PERÚ", p.final_sanchez.votos, p.final_sanchez.pct);
-    barHTML(document.getElementById('barProy'), p.final_keiko.pct);
-    document.getElementById('leadProy').innerHTML =
-      `Ganador proyectado: <span class="${COL[p.ganador_proyectado]}">${SHORT[p.ganador_proyectado]}</span> por ${fmt(p.diferencia_proyectada)} votos`;
-    document.getElementById('metodoProy').textContent = '📐 Método: ' + p.metodo;
+    // ---- Marcador oficial
+    const tot = d.fp_oficial + d.jp_oficial;
+    const jpP = d.jp_oficial/tot*100, fpP = d.fp_oficial/tot*100;
+    $('jpPct').textContent = jpP.toFixed(3)+'%'; $('fpPct').textContent = fpP.toFixed(3)+'%';
+    $('jpVotos').textContent = fmt(d.jp_oficial)+' votos'; $('fpVotos').textContent = fmt(d.fp_oficial)+' votos';
+    $('bjp').style.width = jpP+'%'; $('bfp').style.width = fpP+'%';
+    const lb = d.brecha_oficial >= 0 ? 'Sánchez' : 'Fujimori';
+    $('notaBrecha').innerHTML = `Ventaja actual de ${lb}: <b class="mono">+${fmt(Math.abs(d.brecha_oficial))} votos</b>` + (d.avance_actas_pct ? ` · ${d.avance_actas_pct.toFixed(2)}% de actas contabilizadas` : '');
+    if(d.avance_actas_pct) $('avance').textContent = d.avance_actas_pct.toFixed(1)+'% de actas';
 
-    // Escrutinio
-    const e = d.escrutinio;
-    document.getElementById('gridEscrutinio').innerHTML = [
-      [fmt(e.mesas_contabilizadas), 'Mesas contabilizadas'],
-      [fmt(e.mesas_pendientes), 'Mesas pendientes'],
-      [fmt(e.pendientes_peru), 'Pendientes Perú'],
-      [fmt(e.pendientes_exterior), 'Pendientes exterior'],
-      [fmt(e.camino_jee), 'Camino al JEE'],
-      [fmt(e.electores_en_pendientes), 'Electores en pendientes'],
-    ].map(([v,l]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+    // ---- Waterfall
+    const maxAbs = Math.max(Math.abs(d.brecha_oficial), Math.abs(d.ext_pendiente.neto_fp), Math.abs(d.jee.neto_fp), 1);
+    const setBar = (idBar, idTxt, neto, descId, desc) => {
+      const fp = neto > 0; // neto en favor de FP
+      const el = $(idBar); el.className = 'wf-bar ' + (fp?'fp':'jp');
+      el.style.width = (Math.abs(neto)/maxAbs*46)+'%';
+      const t = $(idTxt); t.textContent = (fp?'Fujimori +':'Sánchez +') + fmt(Math.abs(neto));
+      t.className = 'd ' + (fp?'fp':'jp');
+      if(descId) $(descId).textContent = desc;
+    };
+    setBar('wfBrecha','wfBrechaTxt', -d.brecha_oficial, null);
+    setBar('wfExt','wfExtTxt', d.ext_pendiente.neto_fp, 'wfExtDesc',
+      `${fmt(d.ext_pendiente.mesas)} mesas sin contar (~${fmt(d.ext_pendiente.validos_est)} votos), proyección país por país.`);
+    setBar('wfPer','wfPerTxt', d.peru_pendiente.neto_fp, 'wfPerDesc',
+      `${fmt(d.peru_pendiente.mesas)} mesas pendientes en Perú (~${fmt(d.peru_pendiente.validos_est)} votos).`);
+    setBar('wfJee','wfJeeTxt', d.jee.neto_fp, 'wfJeeDesc',
+      `${fmt(d.jee.actas)} actas digitalizadas: ${fmt(d.jee.fp_actas)} favorecen a FP y ${fmt(d.jee.jp_actas)} a JP (valor si se cuentan tras cotejo).`);
 
-    // Exterior
-    const tb = document.querySelector('#tablaExt tbody');
-    tb.innerHTML = (d.exterior_pendiente_por_continente || []).map(x =>
-      `<tr><td>${x.continente||'—'}</td><td>${fmt(x.mesas)}</td><td>${fmt(x.electores)}</td>
-       <td class="k">${fmt(Math.round(x.proj_k))}</td><td class="s">${fmt(Math.round(x.proj_s))}</td></tr>`
-    ).join('');
+    const mg = d.margen_proyectado_fp, mfEl = $('margenFinal');
+    mfEl.textContent = (mg>=0?'Fujimori +':'Sánchez +') + fmt(Math.abs(mg)) + ' ± ' + fmt(d.sigma);
+    mfEl.style.color = mg>=0 ? 'var(--fp)' : 'var(--jp)';
 
-  }catch(err){
-    document.getElementById('error').style.display = 'block';
-    console.error(err);
+    // ---- Tabla países
+    $('tbodyPaises').innerHTML = d.ext_pendiente.paises_top.map(p=>{
+      const cls = p.neto_fp>=0?'fp-txt':'jp-txt', sg = p.neto_fp>=0?'+':'−';
+      return `<tr><td>${p.pais}</td><td class="num">${p.mesas}</td><td class="num">${(p.fp_share*100).toFixed(1)}%</td><td class="num ${cls}">${sg}${fmt(Math.abs(p.neto_fp))}</td></tr>`;
+    }).join('');
+
+    // ---- JEE
+    $('jeeTotal').textContent = fmt(d.jee.actas);
+    $('jeeFp').textContent = fmt(d.jee.fp_actas); $('jeeJp').textContent = fmt(d.jee.jp_actas);
+
+    // ---- Reloj
+    const t = new Date(d.actualizado_utc);
+    const actualizarReloj = () => {
+      const min = Math.max(0, Math.round((Date.now()-t.getTime())/60000));
+      $('reloj').textContent = `Última actualización: ${t.toLocaleString('es-PE',{dateStyle:'medium',timeStyle:'short'})} (hace ${min} min) · fuente brecha: ${d.fuente_brecha}`;
+    };
+    actualizarReloj(); setInterval(actualizarReloj, 30000);
+
+    // ---- Semáforo de salud autodiagnóstico
+    const salud = $('salud');
+    const horasDe = iso => iso ? (Date.now() - new Date(iso).getTime())/3600000 : null;
+    const hData    = horasDe(d.actualizado_utc);            // antigüedad del cálculo
+    const hScraper = horasDe(d.scraper_ultima_actualizacion); // antigüedad del scraper fuente
+    const usaCache = (d.fuente_brecha || '').includes('cache');
+
+    let nivel = 'ok', msgs = [];
+    if (hData !== null && hData > 3)      { nivel = 'err';  msgs.push(`El cálculo tiene <b>${hData.toFixed(1)} h</b> de antigüedad: el robot de GitHub no está corriendo o falla.`); }
+    else if (hData !== null && hData > 1) { nivel = 'warn'; msgs.push(`Último cálculo hace <b>${hData.toFixed(0)} h</b>.`); }
+
+    if (usaCache) { if (nivel==='ok') nivel='warn'; msgs.push(`La <b>ONPE no respondió</b>: la brecha oficial es la última conocida (no en vivo). El extranjero y el JEE sí se recalcularon.`); }
+
+    if (hScraper !== null) {
+      if (hScraper > 6)      { if (nivel!=='err') nivel='warn'; msgs.push(`La fuente de datos mesa-por-mesa lleva <b>${hScraper.toFixed(0)} h</b> sin actualizar (el scraper externo podría haberse detenido al cerrar el conteo).`); }
+    }
+
+    if (nivel === 'ok') msgs.push('Datos frescos. ONPE en vivo y fuente mesa-por-mesa al día.');
+    const titulo = nivel==='ok' ? 'Todo en orden' : nivel==='warn' ? 'Datos parcialmente desactualizados' : 'Datos desactualizados';
+    salud.className = 'salud ' + nivel;
+    salud.innerHTML = `<span class="luz"></span><b>${titulo}.</b> ` + msgs.join(' ');
+
+  }catch(e){
+    $('reloj').textContent = 'No se pudieron cargar los datos. Reintenta en unos minutos.';
+    console.error(e);
   }
 }
 cargar();
-setInterval(cargar, 5 * 60 * 1000); // refresca cada 5 min si la página queda abierta
+setInterval(cargar, 5*60*1000); // re-consulta cada 5 min si dejan la página abierta
 </script>
 </body>
 </html>

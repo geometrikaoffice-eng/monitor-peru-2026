@@ -1,230 +1,181 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
-Monitor Electoral Perú 2026 — Segunda Vuelta
-Robot de análisis: descarga datos del scraper de oscarzamora,
-consulta la ONPE directamente para la cifra oficial,
-proyecta las mesas pendientes por geografía y genera resumen.json
+Monitor Estadístico — Segunda Vuelta Perú 2026
+Recalcula la proyección completa y escribe docs/resumen.json + docs/historial.json
 
-Corre automáticamente vía GitHub Actions cada 30 minutos.
+Fuentes:
+  1. ONPE oficial (brecha contabilizada)  → API directa con curl_cffi
+  2. Datos mesa-por-mesa                  → repo oscarzamora/onpe-scraper-2026-2
 """
-import json
-import io
-import sys
-from datetime import datetime, timezone, timedelta
+import json, io, sys, math, datetime, urllib.request
+from pathlib import Path
 
 import pandas as pd
-import requests as std_requests
 
 RAW = "https://raw.githubusercontent.com/oscarzamora/onpe-scraper-2026-2/main/output/"
-ONPE_BASE = "https://resultadosegundavuelta.onpe.gob.pe"
+ONPE = "https://resultadosegundavuelta.onpe.gob.pe/presentacion-backend"
+DOCS = Path(__file__).parent / "docs"
+ID_FP, ID_JP = 8, 10          # Fuerza Popular / Juntos por el Perú
+SUPERVIVENCIA_JEE = 0.85       # tasa histórica de actas observadas que se cuentan tras cotejo
 
-KEIKO = "FUERZA POPULAR"
-SANCHEZ = "JUNTOS POR EL PERÚ"
+# ---------------------------------------------------------------- utilidades
+def fetch_tsv(name: str) -> pd.DataFrame:
+    with urllib.request.urlopen(RAW + name, timeout=120) as r:
+        return pd.read_csv(io.BytesIO(r.read()), sep="\t",
+                           dtype={"codigo_mesa": str, "id_ubigeo": str, "ubigeo": str})
 
-LIMA_TZ = timezone(timedelta(hours=-5))
-
-
-def descargar(nombre):
-    """Descarga un archivo TSV del repo del scraper."""
-    r = std_requests.get(RAW + nombre, timeout=60)
-    r.raise_for_status()
-    return pd.read_csv(io.StringIO(r.text), sep="\t", dtype=str)
-
-
-def consultar_onpe_oficial():
-    """Consulta directa a la API de ONPE (requiere fingerprinting de Chrome).
-    Endpoints tomados del código fuente del scraper (client.py).
-    Devuelve dict con totales oficiales o None si falla."""
+def scraper_last_update():
+    """Fecha del último commit del scraper (para detectar si está congelado)."""
     try:
-        from curl_cffi import requests as cf
-        BK = f"{ONPE_BASE}/presentacion-backend"
-        s = cf.Session()
-        s.headers.update({
-            "Accept": "application/json, text/plain, */*",
-            "X-Requested-With": "XMLHttpRequest",
-            "Referer": f"{ONPE_BASE}/main/resumen",
-            "Accept-Language": "es-PE,es;q=0.9",
-        })
-
-        def get_data(path, params=None):
-            r = s.get(BK + path, params=params, impersonate="chrome124", timeout=30)
-            r.raise_for_status()
-            return r.json()["data"]
-
-        # 1. Proceso activo → idEleccionPrincipal
-        proceso = get_data("/proceso/proceso-electoral-activo")
-        id_eleccion = int(proceso["idEleccionPrincipal"])
-        params = {"idEleccion": id_eleccion, "tipoFiltro": "eleccion"}
-
-        # 2. Totales nacionales (actas, participación)
-        tot = get_data("/resumen-general/totales", params=params)
-
-        # 3. Candidatos con votos y porcentajes
-        cand = get_data(
-            "/eleccion-presidencial/participantes-ubicacion-geografica-nombre",
-            params=params)
-
-        return {"candidatos": cand, "totales": tot, "id_eleccion": id_eleccion}
+        url = "https://api.github.com/repos/oscarzamora/onpe-scraper-2026-2/commits?per_page=1"
+        req = urllib.request.Request(url, headers={"User-Agent": "monitor-peru"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = json.loads(r.read())
+        return data[0]["commit"]["committer"]["date"]   # ISO UTC
     except Exception as e:
-        print(f"[AVISO] Consulta directa a ONPE falló ({e}). Continuamos con datos del scraper.",
-              file=sys.stderr)
+        print(f"[aviso] no se pudo leer fecha del scraper: {e}", file=sys.stderr)
         return None
 
+def fetch_onpe_oficial():
+    """Brecha oficial. Requiere curl_cffi (fingerprint Chrome). Devuelve None si falla."""
+    try:
+        from curl_cffi import requests as cr
+        s = cr.Session(impersonate="chrome124")
+        s.headers.update({"Referer": "https://resultadosegundavuelta.onpe.gob.pe/"})
+        pid = s.get(f"{ONPE}/proceso/proceso-electoral-activo", timeout=30).json()["data"]["idEleccionPrincipal"]
+        tot = s.get(f"{ONPE}/resumen-general/totales",
+                    params={"idEleccion": pid, "tipoFiltro": "eleccion"}, timeout=30).json()["data"]
+        cand = s.get(f"{ONPE}/eleccion-presidencial/participantes-ubicacion-geografica-nombre",
+                     params={"idEleccion": pid, "tipoFiltro": "eleccion"}, timeout=30).json()["data"]
+        fp = jp = None
+        for c in cand:
+            blob = json.dumps(c, ensure_ascii=False).upper()
+            v = None
+            for k in ("votos", "totalVotos", "cantidadVotos", "votosObtenidos"):
+                if isinstance(c.get(k), (int, float)): v = int(c[k]); break
+            if v is None: continue
+            if "FUERZA POPULAR" in blob: fp = v
+            elif "JUNTOS POR EL PER" in blob: jp = v
+        avance = None
+        for k in ("porcentajeActasContabilizadas", "avanceActas", "porcAvance"):
+            if isinstance(tot.get(k), (int, float)): avance = float(tot[k]); break
+        if fp and jp:
+            return {"fp": fp, "jp": jp, "avance": avance, "fuente": "onpe-directo"}
+    except Exception as e:
+        print(f"[aviso] ONPE directo falló: {e}", file=sys.stderr)
+    return None
 
+def phi(z):  # CDF normal estándar
+    return 0.5 * (1 + math.erf(z / math.sqrt(2)))
+
+# ---------------------------------------------------------------- pipeline
 def main():
-    print("Descargando datos del scraper...")
-    mesas = descargar("mesas_data.txt")
-    votos = descargar("votos.txt")
-    agrup = descargar("agrupaciones.txt")
-    ub = descargar("ubicaciones.txt")
+    mesas = fetch_tsv("mesas_data.txt")
+    votos = fetch_tsv("votos.txt")
+    ubi   = fetch_tsv("ubicaciones.txt")
+    m = mesas.merge(ubi, left_on="id_ubigeo", right_on="ubigeo", how="left")
+    pv = (votos.pivot_table(index="codigo_mesa", columns="partido_id",
+                            values="votos", aggfunc="sum").fillna(0)
+                .rename(columns={ID_FP: "FP", ID_JP: "JP"}))
 
-    # Tipos numéricos
-    for c in ["electores_habiles", "votos_emitidos", "votos_validos", "total_asistentes"]:
-        mesas[c] = pd.to_numeric(mesas[c], errors="coerce").fillna(0)
-    mesas["participacion_ciudadana"] = pd.to_numeric(mesas["participacion_ciudadana"], errors="coerce")
-    votos["votos"] = pd.to_numeric(votos["votos"], errors="coerce").fillna(0)
-    votos["partido_id"] = votos["partido_id"].astype(str)
-    agrup["partido_id"] = agrup["partido_id"].astype(str)
+    # ---- 1. Brecha oficial (ONPE directo, con respaldo en historial previo)
+    of = fetch_onpe_oficial()
+    hist_path = DOCS / "historial.json"
+    historial = json.loads(hist_path.read_text()) if hist_path.exists() else []
+    if of is None and historial:
+        prev = historial[-1]
+        of = {"fp": prev["fp_oficial"], "jp": prev["jp_oficial"],
+              "avance": prev.get("avance"), "fuente": "cache-ultima-corrida"}
+    if of is None:
+        sys.exit("Sin brecha oficial disponible (ONPE caído y sin historial). Abortando sin cambios.")
+    brecha_jp = of["jp"] - of["fp"]            # + = ventaja Sánchez
 
-    id_k = agrup.loc[agrup["nombre"] == KEIKO, "partido_id"].iloc[0]
-    id_s = agrup.loc[agrup["nombre"] == SANCHEZ, "partido_id"].iloc[0]
+    # ---- 2. Extranjero pendiente: proyección país por país
+    ext   = m[m["ambito"] == "exterior"]
+    ext_c = ext[ext["codigo_estado_acta"] == "C"]
+    ext_p = ext[ext["codigo_estado_acta"] == "P"]
+    pvc = pv.loc[pv.index.isin(ext_c["codigo_mesa"])].join(
+        ext_c.set_index("codigo_mesa")[["pais", "continente", "electores_habiles", "votos_validos"]])
+    pais = pvc.groupby("pais").agg(n=("FP","count"), fp=("FP","sum"), jp=("JP","sum"),
+                                   el=("electores_habiles","sum"), va=("votos_validos","sum"))
+    cont = pvc.groupby("continente").agg(fp=("FP","sum"), jp=("JP","sum"),
+                                         el=("electores_habiles","sum"), va=("votos_validos","sum"))
+    g_fs = pvc["FP"].sum() / max(pvc["FP"].sum() + pvc["JP"].sum(), 1)
+    g_vr = pvc["votos_validos"].sum() / max(pvc["electores_habiles"].sum(), 1)
 
-    # ── Conteo del scraper (mesa por mesa) ────────────────────────────────
-    contab = mesas[mesas["codigo_estado_acta"] == "C"]
-    pend = mesas[mesas["codigo_estado_acta"] != "C"]
+    def tasa(p, c):
+        if p in pais.index and pais.loc[p, "n"] >= 3 and (pais.loc[p,"fp"]+pais.loc[p,"jp"]) > 0:
+            r = pais.loc[p];  return r["fp"]/(r["fp"]+r["jp"]), r["va"]/max(r["el"],1)
+        if c in cont.index and (cont.loc[c,"fp"]+cont.loc[c,"jp"]) > 0:
+            r = cont.loc[c];  return r["fp"]/(r["fp"]+r["jp"]), r["va"]/max(r["el"],1)
+        return g_fs, g_vr
 
-    v = votos.merge(contab[["codigo_mesa", "id_ubigeo", "id_ambito_geografico"]],
-                    on="codigo_mesa", how="inner")
-    tot_k = int(v.loc[v["partido_id"] == id_k, "votos"].sum())
-    tot_s = int(v.loc[v["partido_id"] == id_s, "votos"].sum())
-    validos = tot_k + tot_s
+    ext_rows, ext_neto, ext_validos = [], 0.0, 0.0
+    for (cnt, p), g in ext_p.groupby(["continente", "pais"]):
+        fs, vr = tasa(p, cnt)
+        val = g["electores_habiles"].sum() * vr
+        net = val * (2*fs - 1)
+        ext_neto += net; ext_validos += val
+        ext_rows.append({"pais": p, "mesas": int(len(g)), "fp_share": round(fs, 4),
+                         "neto_fp": int(net)})
+    ext_rows.sort(key=lambda r: -abs(r["neto_fp"]))
 
-    # ── Proyección de mesas pendientes por geografía ──────────────────────
-    # Para cada mesa pendiente: estimamos votos usando el patrón de las mesas
-    # YA contabilizadas de su mismo ubigeo (distrito/ciudad). Si el ubigeo no
-    # tiene mesas contabilizadas, usamos el nivel departamento/país, y si no,
-    # el promedio de su ámbito (Perú / Exterior).
-    piv = v.pivot_table(index="codigo_mesa", columns="partido_id",
-                        values="votos", aggfunc="sum", fill_value=0).reset_index()
-    piv = piv.rename(columns={id_k: "vk", id_s: "vs"})
-    if "vk" not in piv: piv["vk"] = 0
-    if "vs" not in piv: piv["vs"] = 0
-    piv = piv.merge(contab[["codigo_mesa", "id_ubigeo", "id_ambito_geografico",
-                            "electores_habiles"]], on="codigo_mesa")
+    # ---- 3. Perú pendiente
+    per_p = m[(m["ambito"]=="peru") & (m["codigo_estado_acta"]=="P")]
+    per_c = m[(m["ambito"]=="peru") & (m["codigo_estado_acta"]=="C")]
+    peru_neto, peru_validos = 0.0, 0.0
+    for (pr, di), g in per_p.groupby(["provincia", "distrito"]):
+        same = per_c[(per_c["distrito"]==di) & (per_c["provincia"]==pr)]
+        if len(same) < 3: same = per_c[per_c["provincia"]==pr]
+        s = pv.loc[pv.index.isin(same["codigo_mesa"])]
+        if s["FP"].sum()+s["JP"].sum() == 0: continue
+        fs = s["FP"].sum()/(s["FP"].sum()+s["JP"].sum())
+        vr = same["votos_validos"].sum()/max(same["electores_habiles"].sum(),1)
+        val = g["electores_habiles"].sum()*vr
+        peru_neto += val*(2*fs-1); peru_validos += val
 
-    # tasas por ubigeo: (votos partido / electores hábiles) — captura participación y preferencia
-    def tasas(df, keys):
-        g = df.groupby(keys).agg(vk=("vk", "sum"), vs=("vs", "sum"),
-                                 eh=("electores_habiles", "sum")).reset_index()
-        g["rk"] = g["vk"] / g["eh"].clip(lower=1)
-        g["rs"] = g["vs"] / g["eh"].clip(lower=1)
-        return g
+    # ---- 4. Actas en el JEE
+    jee_codes = m[m["codigo_estado_acta"]=="E"]["codigo_mesa"]
+    pj = pv.loc[pv.index.isin(jee_codes)]
+    jee_neto = float(pj["FP"].sum() - pj["JP"].sum())
+    jee_fp_actas = int((pj["FP"] > pj["JP"]).sum())
+    jee_jp_actas = int((pj["JP"] > pj["FP"]).sum())
 
-    t_ubigeo = tasas(piv, ["id_ubigeo"])
-    # nivel superior: prefijo de departamento (2 primeros dígitos del ubigeo)
-    piv["dep"] = piv["id_ubigeo"].str[:2]
-    t_dep = tasas(piv, ["dep"])
-    t_amb = tasas(piv, ["id_ambito_geografico"])
+    # ---- 5. Modelo de probabilidad
+    margen = -brecha_jp + ext_neto + peru_neto + SUPERVIVENCIA_JEE * jee_neto   # + = FP
+    sigma = math.sqrt((0.08*(ext_validos+peru_validos))**2     # error de proyección pendiente
+                      + (0.25*abs(jee_neto))**2                 # incertidumbre resolución JEE
+                      + 20000**2)                               # riesgo de modelo / sesgos sistemáticos
+    p_fp = phi(margen / sigma)
 
-    p = pend[["codigo_mesa", "id_ubigeo", "id_ambito_geografico",
-              "electores_habiles", "codigo_estado_acta"]].copy()
-    p["dep"] = p["id_ubigeo"].str[:2]
-    p = p.merge(t_ubigeo[["id_ubigeo", "rk", "rs"]], on="id_ubigeo", how="left")
-    p = p.merge(t_dep[["dep", "rk", "rs"]], on="dep", how="left", suffixes=("", "_dep"))
-    p = p.merge(t_amb[["id_ambito_geografico", "rk", "rs"]],
-                on="id_ambito_geografico", how="left", suffixes=("", "_amb"))
-    p["rk"] = p["rk"].fillna(p["rk_dep"]).fillna(p["rk_amb"]).fillna(0)
-    p["rs"] = p["rs"].fillna(p["rs_dep"]).fillna(p["rs_amb"]).fillna(0)
-    p["proj_k"] = p["rk"] * p["electores_habiles"]
-    p["proj_s"] = p["rs"] * p["electores_habiles"]
-
-    proj_k = float(p["proj_k"].sum())
-    proj_s = float(p["proj_s"].sum())
-
-    pend_peru = p[p["id_ambito_geografico"] == "1"]
-    pend_ext = p[p["id_ambito_geografico"] == "2"]
-    jee = pend[pend["codigo_estado_acta"] == "E"]
-
-    # ── Cifra oficial ONPE (directa) ──────────────────────────────────────
-    oficial = consultar_onpe_oficial()
-    oficial_resumen = None
-    if oficial and oficial.get("candidatos"):
-        try:
-            filas = []
-            for c in oficial["candidatos"]:
-                filas.append({
-                    "agrupacion": c.get("nombreAgrupacionPolitica") or c.get("nombre"),
-                    "votos": c.get("totalVotosValidos") or c.get("votos"),
-                    "pct": c.get("porcentajeVotosValidos") or c.get("porcentaje"),
-                })
-            t = oficial.get("totales") or {}
-            oficial_resumen = {
-                "candidatos": filas,
-                "actas_contabilizadas_pct": t.get("actasContabilizadas"),
-                "participacion": t.get("participacionCiudadana"),
-            }
-        except Exception as e:
-            print(f"[AVISO] Formato inesperado de ONPE: {e}", file=sys.stderr)
-
-    # ── Desglose exterior por continente ──────────────────────────────────
-    ub_ext = ub[ub["ambito"] == "exterior"][["ubigeo", "continente", "pais"]]
-    pe = pend_ext.merge(ub_ext, left_on="id_ubigeo", right_on="ubigeo", how="left")
-    ext_por_continente = (pe.groupby("continente")
-                          .agg(mesas=("codigo_mesa", "count"),
-                               electores=("electores_habiles", "sum"),
-                               proj_k=("proj_k", "sum"),
-                               proj_s=("proj_s", "sum"))
-                          .reset_index().to_dict(orient="records"))
-
-    total_proj_k = tot_k + proj_k
-    total_proj_s = tot_s + proj_s
-    tp = total_proj_k + total_proj_s
-
+    ahora = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+    scraper_fecha = scraper_last_update()
     resumen = {
-        "actualizado": datetime.now(LIMA_TZ).strftime("%Y-%m-%d %H:%M:%S"),
-        "actualizado_utc": datetime.now(timezone.utc).isoformat(),
-        "fuente_scraper": "oscarzamora/onpe-scraper-2026-2",
-        "escrutinio": {
-            "mesas_total_dataset": int(len(mesas)),
-            "mesas_contabilizadas": int(len(contab)),
-            "mesas_pendientes": int(len(pend)),
-            "pendientes_peru": int(len(pend_peru)),
-            "pendientes_exterior": int(len(pend_ext)),
-            "camino_jee": int(len(jee)),
-            "electores_en_pendientes": int(pend["electores_habiles"].sum()),
-        },
-        "conteo": {
-            "keiko": {"nombre": KEIKO, "votos": tot_k,
-                      "pct": round(100 * tot_k / max(validos, 1), 2)},
-            "sanchez": {"nombre": SANCHEZ, "votos": tot_s,
-                        "pct": round(100 * tot_s / max(validos, 1), 2)},
-            "diferencia": abs(tot_k - tot_s),
-            "lidera": KEIKO if tot_k > tot_s else SANCHEZ,
-        },
-        "proyeccion": {
-            "pendientes_keiko": round(proj_k),
-            "pendientes_sanchez": round(proj_s),
-            "final_keiko": {"votos": round(total_proj_k),
-                            "pct": round(100 * total_proj_k / max(tp, 1), 2)},
-            "final_sanchez": {"votos": round(total_proj_s),
-                              "pct": round(100 * total_proj_s / max(tp, 1), 2)},
-            "diferencia_proyectada": round(abs(total_proj_k - total_proj_s)),
-            "ganador_proyectado": KEIKO if total_proj_k > total_proj_s else SANCHEZ,
-            "metodo": "Tasa votos/electores de mesas contabilizadas del mismo "
-                      "ubigeo (fallback: departamento → ámbito), aplicada a "
-                      "electores hábiles de mesas pendientes.",
-        },
-        "exterior_pendiente_por_continente": ext_por_continente,
-        "onpe_oficial": oficial_resumen,
+        "actualizado_utc": ahora,
+        "fuente_brecha": of["fuente"],
+        "scraper_ultima_actualizacion": scraper_fecha,
+        "avance_actas_pct": of.get("avance"),
+        "fp_oficial": int(of["fp"]), "jp_oficial": int(of["jp"]),
+        "brecha_oficial": int(brecha_jp),
+        "ext_pendiente": {"mesas": int(len(ext_p)), "validos_est": int(ext_validos),
+                          "neto_fp": int(ext_neto), "paises_top": ext_rows[:8]},
+        "peru_pendiente": {"mesas": int(len(per_p)), "validos_est": int(peru_validos),
+                           "neto_fp": int(peru_neto)},
+        "jee": {"actas": int(len(pj)), "fp_actas": jee_fp_actas, "jp_actas": jee_jp_actas,
+                "neto_fp": int(jee_neto), "supervivencia_asumida": SUPERVIVENCIA_JEE},
+        "margen_proyectado_fp": int(margen),
+        "sigma": int(sigma),
+        "prob_fujimori": round(p_fp, 4),
+        "prob_sanchez": round(1 - p_fp, 4),
     }
+    DOCS.mkdir(exist_ok=True)
+    (DOCS / "resumen.json").write_text(json.dumps(resumen, ensure_ascii=False, indent=1))
 
-    with open("resumen.json", "w", encoding="utf-8") as f:
-        json.dump(resumen, f, ensure_ascii=False, indent=1)
-
-    print(json.dumps(resumen["conteo"], ensure_ascii=False, indent=2))
-    print(json.dumps(resumen["proyeccion"], ensure_ascii=False, indent=2))
-    print("OK → resumen.json generado")
-
+    historial.append({"t": ahora, "prob_fp": round(p_fp, 4),
+                      "brecha": int(brecha_jp), "avance": of.get("avance"),
+                      "fp_oficial": int(of["fp"]), "jp_oficial": int(of["jp"])})
+    hist_path.write_text(json.dumps(historial[-500:], ensure_ascii=False))
+    print(f"OK · P(Fujimori)={p_fp:.1%} · margen proyectado FP {margen:+,.0f} ± {sigma:,.0f}")
 
 if __name__ == "__main__":
     main()
