@@ -1,42 +1,42 @@
 {
- "actualizado": "2026-06-09 20:48:57",
- "actualizado_utc": "2026-06-10T01:48:57.144122+00:00",
+ "actualizado": "2026-06-09 21:06:46",
+ "actualizado_utc": "2026-06-10T02:06:46.970921+00:00",
  "fuente_scraper": "oscarzamora/onpe-scraper-2026-2",
  "escrutinio": {
   "mesas_total_dataset": 88063,
-  "mesas_contabilizadas": 84828,
-  "mesas_pendientes": 3235,
+  "mesas_contabilizadas": 84852,
+  "mesas_pendientes": 3211,
   "pendientes_peru": 1564,
-  "pendientes_exterior": 1671,
+  "pendientes_exterior": 1647,
   "camino_jee": 1518,
-  "electores_en_pendientes": 1270944
+  "electores_en_pendientes": 1259736
  },
  "conteo": {
   "keiko": {
    "nombre": "FUERZA POPULAR",
-   "votos": 8686120,
-   "pct": 50.73
+   "votos": 8687751,
+   "pct": 50.74
   },
   "sanchez": {
    "nombre": "JUNTOS POR EL PERÚ",
-   "votos": 8434628,
-   "pct": 49.27
+   "votos": 8435776,
+   "pct": 49.26
   },
-  "diferencia": 251492,
+  "diferencia": 251975,
   "lidera": "FUERZA POPULAR"
  },
  "proyeccion": {
-  "pendientes_keiko": 317664,
-  "pendientes_sanchez": 221886,
+  "pendientes_keiko": 315372,
+  "pendientes_sanchez": 218840,
   "final_keiko": {
-   "votos": 9003784,
-   "pct": 50.98
+   "votos": 9003123,
+   "pct": 50.99
   },
   "final_sanchez": {
-   "votos": 8656514,
-   "pct": 49.02
+   "votos": 8654616,
+   "pct": 49.01
   },
-  "diferencia_proyectada": 347270,
+  "diferencia_proyectada": 348507,
   "ganador_proyectado": "FUERZA POPULAR",
   "metodo": "Tasa votos/electores de mesas contabilizadas del mismo ubigeo (fallback: departamento → ámbito), aplicada a electores hábiles de mesas pendientes."
  },
@@ -57,10 +57,10 @@
   },
   {
    "continente": "EUROPA",
-   "mesas": 666,
-   "electores": 325018,
-   "proj_k": 51609.31574411378,
-   "proj_s": 45847.43605869141
+   "mesas": 642,
+   "electores": 313810,
+   "proj_k": 49317.53372115761,
+   "proj_s": 42801.371262391185
   },
   {
    "continente": "OCEANÍA",
