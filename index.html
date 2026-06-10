@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor Electoral Perú 2026 — Segunda Vuelta</title>
+<style>
+  :root{
+    --bg:#0e1116; --card:#171c24; --card2:#1d2430; --txt:#e8ebf0; --mut:#8b94a3;
+    --keiko:#f5821f; --sanchez:#c8102e; --ok:#3ecf8e; --warn:#f0b429; --line:#2a3342;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;padding:20px;max-width:880px;margin:0 auto}
+  h1{font-size:1.35rem;letter-spacing:.5px}
+  .sub{color:var(--mut);font-size:.85rem;margin:4px 0 18px}
+  .badge{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:3px 12px;font-size:.75rem;color:var(--mut);margin:2px 4px 2px 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .card h2{font-size:.8rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--mut);margin-bottom:14px}
+  .race{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .cand{flex:1;min-width:230px}
+  .cand .nom{font-size:.85rem;font-weight:600;margin-bottom:4px}
+  .cand .pct{font-size:2.2rem;font-weight:700}
+  .cand .vot{color:var(--mut);font-size:.85rem}
+  .bar{height:14px;border-radius:7px;background:var(--card2);overflow:hidden;display:flex;margin:14px 0 6px}
+  .bar div{height:100%}
+  .k{color:var(--keiko)} .s{color:var(--sanchez)}
+  .bk{background:var(--keiko)} .bs{background:var(--sanchez)}
+  .center{text-align:center;color:var(--mut);font-size:.8rem}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .stat{background:var(--card2);border-radius:10px;padding:12px;text-align:center}
+  .stat .v{font-size:1.3rem;font-weight:700}
+  .stat .l{font-size:.7rem;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+  .lead{font-size:1.05rem;font-weight:600;padding:10px 14px;border-radius:10px;background:var(--card2);margin-top:12px;text-align:center}
+  table{width:100%;border-collapse:collapse;font-size:.83rem}
+  th,td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--mut);font-weight:600;font-size:.72rem;text-transform:uppercase}
+  .nota{color:var(--mut);font-size:.75rem;line-height:1.5;margin-top:10px}
+  .err{background:#3a1f1f;border:1px solid #6e3030;border-radius:10px;padding:14px;color:#f0b0b0;display:none}
+  footer{color:var(--mut);font-size:.72rem;text-align:center;margin:24px 0;line-height:1.6}
+  a{color:#6ea8fe;text-decoration:none}
+  .pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px;animation:p 2s infinite}
+  @keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+</head>
+<body>
+  <h1>🇵🇪 Monitor Electoral Perú 2026 — 2.ª Vuelta</h1>
+  <div class="sub"><span class="pulse"></span>Actualización automática cada 30 min · <span id="actualizado">cargando…</span></div>
+
+  <div class="err" id="error">No se pudo cargar resumen.json. Verifica que el GitHub Action haya corrido al menos una vez.</div>
+
+  <!-- CIFRA OFICIAL ONPE -->
+  <div class="card" id="cardOficial" style="display:none">
+    <h2>📡 Cifra oficial ONPE (consulta directa)</h2>
+    <div class="race" id="raceOficial"></div>
+    <div class="bar" id="barOficial"></div>
+    <div class="center" id="metaOficial"></div>
+  </div>
+
+  <!-- CONTEO MESA POR MESA -->
+  <div class="card">
+    <h2>🗳️ Conteo mesa por mesa (dataset scraper)</h2>
+    <div class="race" id="raceConteo"></div>
+    <div class="bar" id="barConteo"></div>
+    <div class="lead" id="leadConteo"></div>
+    <p class="nota">⚠️ El dataset del scraper está incompleto (~4,700 mesas menos que el total oficial). La cifra oficial ONPE de arriba es la referencia definitiva.</p>
+  </div>
+
+  <!-- PROYECCIÓN -->
+  <div class="card">
+    <h2>🔮 Proyección con mesas pendientes</h2>
+    <div class="race" id="raceProy"></div>
+    <div class="bar" id="barProy"></div>
+    <div class="lead" id="leadProy"></div>
+    <p class="nota" id="metodoProy"></p>
+  </div>
+
+  <!-- ESCRUTINIO -->
+  <div class="card">
+    <h2>📊 Avance del escrutinio</h2>
+    <div class="grid" id="gridEscrutinio"></div>
+  </div>
+
+  <!-- EXTERIOR -->
+  <div class="card">
+    <h2>🌎 Voto exterior pendiente por continente</h2>
+    <table id="tablaExt"><thead><tr>
+      <th>Continente</th><th>Mesas</th><th>Electores</th><th>Proy. FP</th><th>Proy. JP</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+
+  <footer>
+    Datos: <a href="https://github.com/oscarzamora/onpe-scraper-2026-2" target="_blank">oscarzamora/onpe-scraper-2026-2</a> + API oficial ONPE ·
+    Proyección estadística no oficial · Resultados definitivos: <a href="https://resultadosegundavuelta.onpe.gob.pe" target="_blank">ONPE</a>
+  </footer>
+
+<script>
+const fmt = n => Number(n).toLocaleString('es-PE');
+const COL = {"FUERZA POPULAR":"k","JUNTOS POR EL PERÚ":"s"};
+const SHORT = {"FUERZA POPULAR":"Keiko Fujimori · FP","JUNTOS POR EL PERÚ":"Roberto Sánchez · JP"};
+
+function candHTML(nombre, votos, pct){
+  const c = COL[nombre] || "";
+  return `<div class="cand"><div class="nom ${c}">${SHORT[nombre]||nombre}</div>
+    <div class="pct ${c}">${Number(pct).toFixed(2)}%</div>
+    <div class="vot">${fmt(votos)} votos</div></div>`;
+}
+function barHTML(el, pk){
+  el.innerHTML = `<div class="bk" style="width:${pk}%"></div><div class="bs" style="width:${100-pk}%"></div>`;
+}
+
+async function cargar(){
+  try{
+    const r = await fetch('resumen.json?t=' + Date.now());
+    if(!r.ok) throw new Error(r.status);
+    const d = await r.json();
+
+    document.getElementById('actualizado').textContent = 'Datos al ' + d.actualizado + ' (hora Perú)';
+
+    // Oficial ONPE
+    if(d.onpe_oficial && d.onpe_oficial.candidatos){
+      const oc = d.onpe_oficial.candidatos.filter(c => COL[c.agrupacion] !== undefined);
+      if(oc.length === 2){
+        document.getElementById('cardOficial').style.display = 'block';
+        oc.sort((a,b) => COL[a.agrupacion] === 'k' ? -1 : 1);
+        document.getElementById('raceOficial').innerHTML = oc.map(c => candHTML(c.agrupacion, c.votos, c.pct)).join('');
+        barHTML(document.getElementById('barOficial'), Number(oc[0].pct));
+        let meta = [];
+        if(d.onpe_oficial.actas_contabilizadas_pct) meta.push('Actas contabilizadas: ' + d.onpe_oficial.actas_contabilizadas_pct + '%');
+        if(d.onpe_oficial.participacion) meta.push('Participación: ' + d.onpe_oficial.participacion + '%');
+        document.getElementById('metaOficial').textContent = meta.join(' · ');
+      }
+    }
+
+    // Conteo
+    const c = d.conteo;
+    document.getElementById('raceConteo').innerHTML =
+      candHTML(c.keiko.nombre, c.keiko.votos, c.keiko.pct) +
+      candHTML(c.sanchez.nombre, c.sanchez.votos, c.sanchez.pct);
+    barHTML(document.getElementById('barConteo'), c.keiko.pct);
+    document.getElementById('leadConteo').innerHTML =
+      `Lidera <span class="${COL[c.lidera]}">${SHORT[c.lidera]}</span> por ${fmt(c.diferencia)} votos`;
+
+    // Proyección
+    const p = d.proyeccion;
+    document.getElementById('raceProy').innerHTML =
+      candHTML("FUERZA POPULAR", p.final_keiko.votos, p.final_keiko.pct) +
+      candHTML("JUNTOS POR EL PERÚ", p.final_sanchez.votos, p.final_sanchez.pct);
+    barHTML(document.getElementById('barProy'), p.final_keiko.pct);
+    document.getElementById('leadProy').innerHTML =
+      `Ganador proyectado: <span class="${COL[p.ganador_proyectado]}">${SHORT[p.ganador_proyectado]}</span> por ${fmt(p.diferencia_proyectada)} votos`;
+    document.getElementById('metodoProy').textContent = '📐 Método: ' + p.metodo;
+
+    // Escrutinio
+    const e = d.escrutinio;
+    document.getElementById('gridEscrutinio').innerHTML = [
+      [fmt(e.mesas_contabilizadas), 'Mesas contabilizadas'],
+      [fmt(e.mesas_pendientes), 'Mesas pendientes'],
+      [fmt(e.pendientes_peru), 'Pendientes Perú'],
+      [fmt(e.pendientes_exterior), 'Pendientes exterior'],
+      [fmt(e.camino_jee), 'Camino al JEE'],
+      [fmt(e.electores_en_pendientes), 'Electores en pendientes'],
+    ].map(([v,l]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+
+    // Exterior
+    const tb = document.querySelector('#tablaExt tbody');
+    tb.innerHTML = (d.exterior_pendiente_por_continente || []).map(x =>
+      `<tr><td>${x.continente||'—'}</td><td>${fmt(x.mesas)}</td><td>${fmt(x.electores)}</td>
+       <td class="k">${fmt(Math.round(x.proj_k))}</td><td class="s">${fmt(Math.round(x.proj_s))}</td></tr>`
+    ).join('');
+
+  }catch(err){
+    document.getElementById('error').style.display = 'block';
+    console.error(err);
+  }
+}
+cargar();
+setInterval(cargar, 5 * 60 * 1000); // refresca cada 5 min si la página queda abierta
+</script>
+</body>
+</html>
