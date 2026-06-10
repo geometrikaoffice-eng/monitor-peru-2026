@@ -1,73 +1,73 @@
 {
- "actualizado": "2026-06-09 21:26:05",
- "actualizado_utc": "2026-06-10T02:26:05.927364+00:00",
+ "actualizado": "2026-06-10 01:47:31",
+ "actualizado_utc": "2026-06-10T06:47:31.427575+00:00",
  "fuente_scraper": "oscarzamora/onpe-scraper-2026-2",
  "escrutinio": {
   "mesas_total_dataset": 88063,
-  "mesas_contabilizadas": 84884,
-  "mesas_pendientes": 3179,
-  "pendientes_peru": 1564,
-  "pendientes_exterior": 1615,
-  "camino_jee": 1518,
-  "electores_en_pendientes": 1243846
+  "mesas_contabilizadas": 85304,
+  "mesas_pendientes": 2759,
+  "pendientes_peru": 1541,
+  "pendientes_exterior": 1218,
+  "camino_jee": 1551,
+  "electores_en_pendientes": 1045807
  },
  "conteo": {
   "keiko": {
    "nombre": "FUERZA POPULAR",
-   "votos": 8690509,
-   "pct": 50.74
+   "votos": 8725272,
+   "pct": 50.76
   },
   "sanchez": {
    "nombre": "JUNTOS POR EL PERÚ",
-   "votos": 8438313,
-   "pct": 49.26
+   "votos": 8462534,
+   "pct": 49.24
   },
-  "diferencia": 252196,
+  "diferencia": 262738,
   "lidera": "FUERZA POPULAR"
  },
  "proyeccion": {
-  "pendientes_keiko": 314071,
-  "pendientes_sanchez": 218569,
+  "pendientes_keiko": 281235,
+  "pendientes_sanchez": 202064,
   "final_keiko": {
-   "votos": 9004580,
-   "pct": 50.98
+   "votos": 9006507,
+   "pct": 50.97
   },
   "final_sanchez": {
-   "votos": 8656882,
-   "pct": 49.02
+   "votos": 8664598,
+   "pct": 49.03
   },
-  "diferencia_proyectada": 347698,
+  "diferencia_proyectada": 341909,
   "ganador_proyectado": "FUERZA POPULAR",
   "metodo": "Tasa votos/electores de mesas contabilizadas del mismo ubigeo (fallback: departamento → ámbito), aplicada a electores hábiles de mesas pendientes."
  },
  "exterior_pendiente_por_continente": [
   {
    "continente": "AMÉRICA",
-   "mesas": 908,
-   "electores": 444400,
-   "proj_k": 74582.76762671783,
-   "proj_s": 34610.58376159654
+   "mesas": 610,
+   "electores": 298283,
+   "proj_k": 51233.142765469616,
+   "proj_s": 26717.142259546585
   },
   {
    "continente": "ASIA",
-   "mesas": 92,
-   "electores": 39977,
-   "proj_k": 5616.10422960725,
-   "proj_s": 2838.2462235649546
+   "mesas": 83,
+   "electores": 38088,
+   "proj_k": 5002.532212885154,
+   "proj_s": 1813.7142857142856
   },
   {
    "continente": "EUROPA",
-   "mesas": 610,
-   "electores": 297920,
-   "proj_k": 48016.26474028641,
-   "proj_s": 42530.04770375439
+   "mesas": 523,
+   "electores": 255492,
+   "proj_k": 41263.11463091511,
+   "proj_s": 36641.894933418334
   },
   {
    "continente": "OCEANÍA",
-   "mesas": 4,
-   "electores": 1308,
-   "proj_k": 223.9567908097241,
-   "proj_s": 127.21995985696309
+   "mesas": 1,
+   "electores": 467,
+   "proj_k": 79.16738082485271,
+   "proj_s": 44.77396893411891
   },
   {
    "continente": "ÁFRICA",
